@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { Route, Routes } from "react-router-dom";
 import Home from "./pages/Home";
 import Layout from "./pages/Layout";
@@ -10,8 +10,16 @@ import Community from "./pages/Community";
 import RemoveBackground from "./pages/RemoveBackground";
 import ReviewResume from "./pages/ReviewResume";
 import RemoveObject from "./pages/RemoveObject";
+import { useAuth } from "@clerk/clerk-react";
 
 const App = () => {
+
+  const { getToken } = useAuth()
+
+  useEffect(() => {
+    getToken().then((token) => console.log(token))
+  }, [])
+
   return (
     <div>
       <Routes>
