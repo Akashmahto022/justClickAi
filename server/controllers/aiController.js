@@ -28,16 +28,10 @@ export const generateArticle = async (req, res) => {
         }
 
         const response = await AI.chat.completions.create({
-            model: "gemini-2.0-flash",
-            messages: [
-                {
-                    role: "user",
-                    content: prompt,
-                },
-            ],
+            model: "gpt-4o-mini",
+            messages: [{ role: "user", content: prompt }],
             temperature: 0.7,
-            max_tokens: length,
-
+            maxOutputTokens: length,
         });
 
         const content = response.choices[0].message.content

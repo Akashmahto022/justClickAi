@@ -1,5 +1,10 @@
 import React, { useState } from "react";
 import { Edit, Sparkles } from "lucide-react";
+import axios from 'axios';
+import { useAuth } from '@clerk/clerk-react'
+import toast from 'react-hot-toast'
+
+axios.defaults.baseURL = import.meta.env.VITE_BASE_URL
 
 const WriteArticle = () => {
   const articleLength = [
@@ -19,9 +24,31 @@ const WriteArticle = () => {
 
   const [selectedLength, setSelectedLength] = useState(articleLength[0]);
   const [input, setInput] = useState("");
+  const [loading, setLoading] = useState(false)
+  const [content, setContent] = useState("")
+
+  const { getToken } = useAuth()
 
   const onSubmitHandler = async (e) => {
-    e.preventdefault();
+    e.preventDefault()
+    try {
+      setLoading(true)
+      const prompt = `Write an article about the ${input} in ${selectedLength.text}`;
+
+      const { data } = await axios.post('/api/ai/generate-article', { prompt, length: selectedLength.text }, {
+        headers: { Authorization: `Bearer ${await getToken()}` }
+      })
+
+      if (data.success) {
+        setContent(data.content)
+      } else {
+        toast.error(data.message)
+      }
+
+    } catch (error) {
+      toast.error(error.message)
+    }
+    setLoading(false)
   };
 
   return (
@@ -49,11 +76,10 @@ const WriteArticle = () => {
         <div className="mt-3 flex gap-3 flex-wrap sm:max-w-9/11">
           {articleLength.map((item, index) => (
             <span
-              className={`text-xs px-4 py-1 border rounded-full cursor-pointer ${
-                selectedLength.text === item.text
-                  ? "bg-blue-50 text-blue-700"
-                  : "text-gray-700 border-gray-700"
-              }`}
+              className={`text-xs px-4 py-1 border rounded-full cursor-pointer ${selectedLength.text === item.text
+                ? "bg-blue-50 text-blue-700"
+                : "text-gray-700 border-gray-700"
+                }`}
               key={index}
               onClick={() => setSelectedLength(item)}
             >
@@ -62,8 +88,13 @@ const WriteArticle = () => {
           ))}
         </div>
         <br />
-        <button className="w-full flex justify-center items-center gap-2 bg-gradient-to-r from-[#226BFF] to-[#65ADFF] text-white px-4 py-2 mt-6 text-sm rounded-lg cursor-pointer">
-          <Edit className="w-5" />
+        <button disabled={loading} className="w-full flex justify-center items-center gap-2 bg-gradient-to-r from-[#226BFF] to-[#65ADFF] text-white px-4 py-2 mt-6 text-sm rounded-lg cursor-pointer">
+          {
+            loading ? <span className="w-4 h-4 my-1 rounded-full border-2 border-t-transparent animate-spin">
+
+            </span> :
+              <Edit className="w-5" />
+          }
           Generate Article
         </button>
       </form>
@@ -75,12 +106,22 @@ const WriteArticle = () => {
           <Edit className="w-5 h-5 text-[#4A7AFF]" />
           <h1 className="text-xl font-semibold">Generate article</h1>
         </div>
-        <div className="flex-1 flex justify-center items-center">
-          <div className="text-sm flex flex-col items-center gap-5 text-gray-400">
-            <Edit className="w-9 h-9" />
-            <p>Enter a topic and click "Generate article" to get started </p>
-          </div>
-        </div>
+        {!content
+          ? (
+
+            <div className="flex-1 flex justify-center items-center">
+              <div className="text-sm flex flex-col items-center gap-5 text-gray-400">
+                <Edit className="w-9 h-9" />
+                <p>Enter a topic and click "Generate article" to get started </p>
+              </div>
+            </div>
+          ) : (
+            <div className="mt-3 h-full overflow-y-scroll text-sm text-slate-600">
+              <div className="">
+                {content}
+              </div>
+            </div>
+          )}
       </div>
     </div>
   );
