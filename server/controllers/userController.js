@@ -1,23 +1,23 @@
 import sql from "../config/db.js"
 
-
-export const getUserCcreations = async (req, res) => {
+// GET USER CREATIONS
+export const getUserCreations = async (req, res) => {
     try {
         const { userId } = req.auth()
-        const creations = await sql`SELECT * FROM creations WHERE user_id = ${userId} OREDR BY created_at DESC`
+        const creations = await sql`SELECT * FROM creations WHERE user_id = ${userId} ORDER BY created_at DESC`
 
-        res.json({ success: true, creations })
+        res.json({ success: true, creations });
 
     } catch (error) {
         res.json({ success: false, message: error.message })
     }
 }
 
+// GET PUBLISHED CREATION
 export const getPublishedCreations = async (req, res) => {
     try {
-
-        const creations = await sql`SELECT * FROM creations WHERE publish = true OREDR BY created_at DESC`
-
+        const creations = await sql`SELECT * FROM creations WHERE publish = true ORDER BY created_at DESC`
+        console.log("creations", creations)
         res.json({ success: true, creations })
 
     } catch (error) {
@@ -25,6 +25,8 @@ export const getPublishedCreations = async (req, res) => {
     }
 }
 
+
+// TOGGLE LIKE CREATION
 export const toggleLikeCreation = async (req, res) => {
     try {
         const { userId } = req.auth
@@ -36,17 +38,17 @@ export const toggleLikeCreation = async (req, res) => {
             res.json({ success: false, message: 'CREATION NOT FOUND' })
         }
 
-        const currentLike = creation.likes;
+        const currentLikes = creation.likes;
         const userIdStr = userId.toString();
         let updatedLikes;
         let message;
 
-        if (currentLike.include(userIdStr)) {
-            updatedLikes = currentLike.filter((user) => user != userIdStr);
+        if (currentLikes.includes(userIdStr)) {
+            updatedLikes = currentLikes.filter((user) => user != userIdStr);
             message = 'Creation Unliked'
         } else {
-            updatedLikes = [...currentLike, userIdStr]
-            message: "Creation Liked"
+            updatedLikes = [...currentLikes, userIdStr]
+            message = "Creation Liked"
         }
 
         const formattedArray = `{${updatedLikes.join(",")}}`

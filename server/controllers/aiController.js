@@ -5,7 +5,6 @@ import axios from 'axios';
 import { v2 as cloudinary } from "cloudinary";
 import fs from 'fs'
 import { PDFParse } from 'pdf-parse';
-import { url } from "inspector";
 
 const AI = new OpenAI({
     apiKey: process.env.GEMINI_API_KEY,
@@ -28,10 +27,10 @@ export const generateArticle = async (req, res) => {
         }
 
         const response = await AI.chat.completions.create({
-            model: "gpt-4o-mini",
+            model: "gemini-2.0-flash",
             messages: [{ role: "user", content: prompt }],
             temperature: 0.7,
-            maxOutputTokens: length,
+            // maxOutputTokens: length,
         });
 
         const content = response.choices[0].message.content
@@ -138,7 +137,7 @@ export const generateImage = async (req, res) => {
 export const removeImageBackgroud = async (req, res) => {
     try {
         const { userId } = req.auth();
-        const { image } = req.file;
+        const image = req.file;
 
         const plan = req.plan;
 
@@ -168,7 +167,7 @@ export const removeImageBackgroud = async (req, res) => {
 export const removeImageObject = async (req, res) => {
     try {
         const { userId } = req.auth();
-        const { image } = req.file;
+        const image = req.file;
         const { object } = req.body;
         const plan = req.plan;
 
@@ -182,7 +181,7 @@ export const removeImageObject = async (req, res) => {
             transformation: [{ effect: `gen_remove: ${object}` }],
             resource_type: 'image'
         })
-
+        console.log(imageUrl)
         await sql`INSERT INTO creations (user_id, prompt, content, type) 
         VALUES (${userId}, ${`Remove ${object} from image`}, ${imageUrl}, 'image')`;
 
@@ -209,9 +208,11 @@ export const resumeReview = async (req, res) => {
         }
 
         const dataBuffer = fs.readFileSync(resume.path)
-        const pdfData = await PDFParse({ url: dataBuffer })
+        const uint8Array = new Uint8Array(dataBuffer);
+        const pdfData = new PDFParse(uint8Array);
+        const result = await pdfData.getText();
 
-        const prompt = `Review the following resume and provide constructive feedback on its strengths, weakesses, and areas for improvment. Resume content:\n\n${pdfData.text}`
+        const prompt = `Review the following resume and provide constructive feedback on its strengths, weakesses, and areas for improvment. Resume content:\n\n${result}`
 
         const response = await AI.chat.completions.create({
             model: "gemini-2.0-flash",
