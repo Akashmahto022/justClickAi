@@ -3,8 +3,46 @@ import sql from "../config/db.js";
 import { clerkClient } from "@clerk/express";
 import axios from 'axios';
 import { v2 as cloudinary } from "cloudinary";
-import fs from 'fs'
-import { PDFParse } from 'pdf-parse';
+// import { PDFParse } from 'pdf-parse';
+import PDFParser from "pdf2json";
+import fs from "fs";
+
+const extractPdfText = async (pdfPath) => {
+    // Temporarily silence noisy pdf2json warnings
+    const originalWarn = console.warn;
+    console.warn = () => { };
+
+    return new Promise((resolve, reject) => {
+        const pdfParser = new PDFParser();
+
+        pdfParser.on("pdfParser_dataError", (err) => {
+            console.warn = originalWarn;
+            reject(err.parserError);
+        });
+
+        pdfParser.on("pdfParser_dataReady", (pdfData) => {
+            console.warn = originalWarn;
+
+            const text = pdfData.Pages.map((page) =>
+                page.Texts.map((t) => {
+                    try {
+                        return decodeURIComponent(t.R[0].T);
+                    } catch {
+                        return t.R[0].T;
+                    }
+                }).join(" ")
+            ).join("\n\n");
+
+            resolve(text);
+        });
+
+        pdfParser.loadPDF(pdfPath);
+    });
+};
+
+
+
+
 
 const AI = new OpenAI({
     apiKey: process.env.GEMINI_API_KEY,
@@ -198,7 +236,6 @@ export const resumeReview = async (req, res) => {
         const { userId } = req.auth();
         const resume = req.file;
         const plan = req.plan;
-
         if (plan !== 'premium') {
             return res.json({ success: false, message: "This feature is only available for premium subcriptions" })
         }
@@ -207,12 +244,11 @@ export const resumeReview = async (req, res) => {
             return res.json({ success: false, message: "Resume file size exceed allowed size (5MB)." })
         }
 
-        const dataBuffer = fs.readFileSync(resume.path)
-        const uint8Array = new Uint8Array(dataBuffer);
-        const pdfData = new PDFParse(uint8Array);
-        const result = await pdfData.getText();
+        const data = await extractPdfText(resume.path);
+        const extractedText = data.text;
 
-        const prompt = `Review the following resume and provide constructive feedback on its strengths, weakesses, and areas for improvment. Resume content:\n\n${result}`
+        const prompt = `Review the following resume and provide constructive feedback on its strengths, weaknesses, and areas for improvement. Resume content: ${extractedText}`;
+
 
         const response = await AI.chat.completions.create({
             model: "gemini-2.0-flash",
@@ -224,7 +260,6 @@ export const resumeReview = async (req, res) => {
             ],
             temperature: 0.7,
             max_tokens: 1000,
-
         });
 
         const content = response.choices[0].message.content
