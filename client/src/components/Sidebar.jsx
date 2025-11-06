@@ -68,11 +68,11 @@ const Sidebar = ({ sidebar, setSidebar }) => {
     >
       <div className="my-7 w-full">
         <img
-          src={user.imageUrl}
+          src={user?.imageUrl}
           alt="user avatar"
           className="w-13 rounded-full mx-auto"
         />
-        <h1 className="mt-1 text-center">{user.fullName}</h1>
+        <h1 className="mt-1 text-center">{user?.fullName}</h1>
         <div className="px-6 mt-5 text-sm text-gray-600 font-medium">
           {navItem.map(({ to, label, Icon }) => (
             <NavLink
@@ -103,9 +103,9 @@ const Sidebar = ({ sidebar, setSidebar }) => {
           onClick={openUserProfile}
           className="flex gap-2 items-center cursor-pointer"
         >
-          <img src={user.imageUrl} alt="user" className="w-8 rounded-full" />
+          <img src={user?.imageUrl} alt="user" className="w-8 rounded-full" />
           <div>
-            <h1 className="text-sm font-medium">{user.fullName}</h1>
+            <h1 className="text-sm font-medium">{user?.fullName}</h1>
             <p className="text-sm text-gray-500">
               <Protect plan={"premium"} fallback="Free">
                 Premium

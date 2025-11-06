@@ -18,8 +18,6 @@ const Dashboard = () => {
       const { data } = await axios.get('/api/user/get-user-creations', {
         headers: { Authorization: `Bearer ${await getToken()}` }
       })
-      console.log("data", data)
-
       if (data.success) {
         setCreations(data.creations)
       } else {
